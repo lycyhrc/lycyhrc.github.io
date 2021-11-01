@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>如何评估一个模型 - LoveIt</title><meta name="Description" content="关于 LoveIt 主题"><meta property="og:title" content="如何评估一个模型" />
+<meta property="og:description" content="什么是模型评估 需要一种在模型之间进行选择的方法：不同的模型类型，调整参数和特征 使用模型评估(model evaluation)来估计模型将泛化" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" /><meta property="og:image" content="https://lycyhrc.github.io/logo.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-11-01T14:10:56+08:00" />
+<meta property="article:modified_time" content="2021-11-01T14:10:56+08:00" />
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lycyhrc.github.io/logo.png"/>
+
+<meta name="twitter:title" content="如何评估一个模型"/>
+<meta name="twitter:description" content="什么是模型评估 需要一种在模型之间进行选择的方法：不同的模型类型，调整参数和特征 使用模型评估(model evaluation)来估计模型将泛化"/>
+<meta name="application-name" content="LoveIt">
+<meta name="apple-mobile-web-app-title" content="LoveIt"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "如何评估一个模型",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lycyhrc.github.io\/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B\/"
+        },"image": ["https:\/\/lycyhrc.github.io\/images\/Apple-Devices-Preview.png"],"genre": "posts","wordcount":  2607 ,
+        "url": "https:\/\/lycyhrc.github.io\/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B\/","datePublished": "2021-11-01T14:10:56+08:00","dateModified": "2021-11-01T14:10:56+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+            "@type": "Organization",
+            "name": "xxxx","logo": "https:\/\/lycyhrc.github.io\/images\/avatar.png"},"author": {
+                "@type": "Person",
+                "name": "xxxx"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="LoveIt"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>LoveIt</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/categories/documentation/"> 文档 </a><a class="menu-item" href="/about/"> 关于 </a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw'></i>  </a><span class="menu-item delimiter"></span><a href="javascript:void(0);" class="menu-item language" title="选择语言">简体中文<i class="fas fa-chevron-right fa-fw"></i>
+                        <select class="language-select" id="language-select-desktop" onchange="location = this.value;"><option value="/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" selected>简体中文</option></select>
+                    </a><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="LoveIt"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>LoveIt</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/categories/documentation/" title="">文档</a><a class="menu-item" href="/about/" title="">关于</a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a><a href="javascript:void(0);" class="menu-item" title="选择语言">简体中文<i class="fas fa-chevron-right fa-fw"></i>
+                    <select class="language-select" onchange="location = this.value;"><option value="/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" selected>简体中文</option></select>
+                </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">如何评估一个模型</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="/" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>xxxx</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-11-01">2021-11-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2607 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;<span id="/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" class="leancloud_visitors" data-flag-title="如何评估一个模型">
+                        <i class="far fa-eye fa-fw"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;次阅读
+                    </span>&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#什么是模型评估">什么是模型评估</a></li>
+    <li><a href="#如何进行模型评估">如何进行模型评估</a>
+      <ul>
+        <li><a href="#一个简单的模型">一个简单的模型</a></li>
+        <li><a href="#训练模型并调整优化其超参数">训练模型并调整（优化）其超参数</a></li>
+        <li><a href="#建立不同的模型并比较不同的算法">建立不同的模型并比较不同的算法</a></li>
+      </ul>
+    </li>
+    <li><a href="#模型评估指标">模型评估指标</a>
+      <ul>
+        <li><a href="#分类问题">分类问题</a>
+          <ul>
+            <li><a href="#confusion-matrix">Confusion Matrix</a></li>
+            <li><a href="#accuracy">Accuracy</a></li>
+            <li><a href="#precision">Precision</a></li>
+            <li><a href="#recall">Recall</a></li>
+            <li><a href="#specificity">Specificity</a></li>
+            <li><a href="#f1-score">F1-score</a></li>
+            <li><a href="#pr曲线">PR曲线</a></li>
+            <li><a href="#roc-曲线">ROC 曲线</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#模型评估案例">模型评估案例</a>
+      <ul>
+        <li><a href="#场景1评估一个简单模型">场景1:评估一个简单模型</a></li>
+        <li><a href="#场景2-训练模型并调整优化其超参数">场景2: 训练模型并调整（优化）其超参数</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="什么是模型评估">什么是模型评估</h2>
+<ul>
+<li>需要一种在模型之间进行选择的方法：不同的模型类型，调整参数和特征</li>
+<li>使用<strong>模型评估</strong>(<strong>model evaluation</strong>)来估计模型将泛化到样本外数据的程度</li>
+<li>需要<strong>模型评估指标</strong>(<strong>model evaluation  metric</strong> )来量化模型性能</li>
+</ul>
+<h2 id="如何进行模型评估">如何进行模型评估</h2>
+<blockquote>
+<p>最简单的模型评估方法就是留出数据集的一部分评估，且这一部分数据必须是模型以前没见过的。</p>
+</blockquote>
+<p>具体到不同场景有不同方法：</p>
+<h3 id="一个简单的模型">一个简单的模型</h3>
+<p>将数据集分割为一个单独的训练和测试集（留出法）。</p>
+<p>在前者上训练模型，在后者上评估模型(这里的评估指的是计算性能指标，如Precision、Accuracy、Recall、ROC AUC等)。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/01/20201217_3_split.png"
+        data-srcset="/01/20201217_3_split.png, /01/20201217_3_split.png 1.5x, /01/20201217_3_split.png 2x"
+        data-sizes="auto"
+        alt="/01/20201217_3_split.png"
+        title="/01/20201217_3_split.png" /></p>
+<p>sklearn的<a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html" target="_blank" rel="noopener noreffer">train_test_split</a>有具体的实现。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.33</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="训练模型并调整优化其超参数">训练模型并调整（优化）其超参数</h3>
+<p>将数据集拆分为单独的测试和训练集。 在训练集上使用诸如k折交叉验证之类的技术来找到模型的**“最佳”超参数集**。</p>
+<p>如果完成了超参数调整，使用独立的测试集来获得对其性能的无偏估计。</p>
+<p>下面我使用一个图来说明不同之处：</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/01/20201217_4_split-and-evaluation.png"
+        data-srcset="/01/20201217_4_split-and-evaluation.png, /01/20201217_4_split-and-evaluation.png 1.5x, /01/20201217_4_split-and-evaluation.png 2x"
+        data-sizes="auto"
+        alt="/01/20201217_4_split-and-evaluation.png"
+        title="/01/20201217_4_split-and-evaluation.png" /></p>
+<p>主要步骤为：</p>
+<ol>
+<li>训练数据集划分为训练子集和验证集</li>
+<li>在训练自己上进行模型训练</li>
+<li>评估验证集以优化其超参数</li>
+<li>在独立的测试集上进行测试</li>
+</ol>
+<h3 id="建立不同的模型并比较不同的算法">建立不同的模型并比较不同的算法</h3>
+<p>这里先介绍一下K折验证法：</p>
+<p>在k倍交叉验证中，将数据集划分为k个相等大小的样本。 在这k个子样本中，保留了一个子样本作为用于测试模型的验证数据，其余的k-1个子样本用作训练数据。 然后，此交叉验证过程将重复k次，k个子样本中的每一个仅被用作一次验证数据。 然后可以将k个结果取平均值以产生单个估计。</p>
+<p><img src="https://static.packt-cdn.com/products/9781789617740/graphics/b04c27c5-7e3f-428a-9aa6-bb3ebcd3584c.png" alt="img" style="zoom:67%;" /></p>
+<p>在建立不同的模型并比较不同的算法的场景中，我们要使用嵌套的交叉验证，嵌套交叉验证中，有一个外部k-fold交叉验证循环将数据分为训练fold和测试fold，内部的k-fold交叉验证循环通过训练层上的k-fold交叉验证选择模型。 选择模型后，然后使用test fold评估模型性能。 在确定了“最喜欢的”算法之后，我们可以采用“常规” k倍交叉验证方法（在完整的训练集上）找到其“最佳”超参数，并在独立的测试集上对其进行评估。</p>
+<p>让我们考虑一下逻辑回归模型，以使其更清楚：使用嵌套的交叉验证训练m个不同的逻辑回归模型，m个外部折叠中的每个折叠模型都训练1个，内部折叠用于优化每个模型的超参数（例如， 结合使用网格搜索和k折交叉验证，如果您的模型稳定，则这m个模型应该都具有相同的超参数值，并根据外部测试折数报告该模型的平均性能。</p>
+<h2 id="模型评估指标">模型评估指标</h2>
+<p>模评估指标因机器学习任务类型的不同而有所变化，其主要有两种：</p>
+<ol>
+<li><strong>回归问题：</strong> 平均绝对误差，平均平方误差，均方根误差</li>
+<li><strong>分类问题：</strong> 分类准确度（其中包括了许多其他评估指标）</li>
+</ol>
+<h3 id="分类问题">分类问题</h3>
+<blockquote>
+<p>从二分类角度思考，常见的一些术语包括</p>
+</blockquote>
+<ul>
+<li>True positives(TP): 本身是正例，预测<strong>也</strong>为正例的样本数量</li>
+<li>False positives(FP):本身是反例，预测为正例的样本数量</li>
+<li>True negatives(TN):本身是反例，预测<strong>也</strong>为反例的样本数量</li>
+<li>False negatives(FN)：本身是正例，预测为反例的样本数量</li>
+</ul>
+<h4 id="confusion-matrix">Confusion Matrix</h4>
+<p>是上述参数的矩阵形式的表示。可以使用可视化和代码呈现:</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="https://miro.medium.com/max/759/1*yYctsCAlkQHixEHYy0dHPw.png"
+        data-srcset="https://miro.medium.com/max/759/1*yYctsCAlkQHixEHYy0dHPw.png, https://miro.medium.com/max/759/1*yYctsCAlkQHixEHYy0dHPw.png 1.5x, https://miro.medium.com/max/759/1*yYctsCAlkQHixEHYy0dHPw.png 2x"
+        data-sizes="auto"
+        alt="https://miro.medium.com/max/759/1*yYctsCAlkQHixEHYy0dHPw.png"
+        title="Confusion Matrix" /></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="n">y_actu</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_actu</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+<span class="c1">## array([[3, 0],</span>
+<span class="c1">##       [2, 7]])</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>输出一个Numpy矩阵</p>
+<ul>
+<li><strong>TP=3：有3个0(正例),预测出3个0（正例）</strong></li>
+<li>FP=2：有7个1(反例)，预测出2个0（正例）</li>
+<li><strong>TN=7：有7个1(反例)，预测出7个1（正例）</strong></li>
+<li>FN=0：有3个0(正例),预测出0个1（正例）</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">y_actu</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Actual&#39;</span><span class="p">)</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Predicted&#39;</span><span class="p">)</span>
+<span class="n">df_confusion</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">crosstab</span><span class="p">(</span><span class="n">y_actu</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+<span class="n">df_confusion</span>
+</code></pre></td></tr></table>
+</div>
+</div><table>
+<thead>
+<tr>
+<th style="text-align:right">Predicted</th>
+<th style="text-align:right">0</th>
+<th style="text-align:right">1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">Actual</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">7</td>
+</tr>
+</tbody>
+</table>
+<p>将得到一个（带有标签的）Pandas DataFrame，进一步可得到所有统计和</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="n">df_confusion</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">crosstab</span><span class="p">(</span><span class="n">y_actu</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">rownames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Actual&#39;</span><span class="p">],</span> <span class="n">colnames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Predicted&#39;</span><span class="p">],</span> <span class="n">margins</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">df_confusion</span>
+</code></pre></td></tr></table>
+</div>
+</div><table>
+<thead>
+<tr>
+<th style="text-align:right">Predicted</th>
+<th style="text-align:right">0</th>
+<th style="text-align:right">1</th>
+<th style="text-align:right">All</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">Actual</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">3</td>
+</tr>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">7</td>
+<td style="text-align:right">9</td>
+</tr>
+<tr>
+<td style="text-align:right">All</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">7</td>
+<td style="text-align:right">12</td>
+</tr>
+</tbody>
+</table>
+<p>我们可以可视化这一张图表试试</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">df_confusion</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Confusion matrix&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray_r</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">df_confusion</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span> <span class="c1"># imshow</span>
+    <span class="c1">#plt.title(title)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+    <span class="n">tick_marks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_confusion</span><span class="o">.</span><span class="n">columns</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">df_confusion</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">,</span> <span class="n">df_confusion</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="c1">#plt.tight_layout()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">df_confusion</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">df_confusion</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="n">plot_confusion_matrix</span><span class="p">(</span><span class="n">df_confusion</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/01/20201217_1_confusion-matrix.png"
+        data-srcset="/01/20201217_1_confusion-matrix.png, /01/20201217_1_confusion-matrix.png 1.5x, /01/20201217_1_confusion-matrix.png 2x"
+        data-sizes="auto"
+        alt="/01/20201217_1_confusion-matrix.png"
+        title="/01/20201217_1_confusion-matrix.png" /></p>
+<h4 id="accuracy">Accuracy</h4>
+<p>评判模型最常用的指标，实际上并不是性能的明确指标。当数据集不平衡时，此情况不适用。</p>
+<p>以癌症检测模型为例。患癌症的几率非常低。假设在100名患者中，有90人没有患癌症，剩下的10人实际上患有癌症。我们不想错过一个患有癌症却未被发现的病人(false negative)。检测每个人是否患有癌症的准确率为90%。这个模型在这里什么也没做，只是对所有100个预测都给出了癌症的概率。此情况需要更好的替代方案。</p>
+<h4 id="precision">Precision</h4>
+<p>正实例占<strong>预测的正实例</strong>总数的百分比分母(TP + FP)是对整个给定数据集做的正例的模型预测。
+$$
+\dfrac{TP }{TP+FP }
+$$</p>
+<h4 id="recall">Recall</h4>
+<p>正实例占<strong>实际正实例</strong>总数的百分比。分母(TP + FN)是数据集中出现的积极实例的实际数量。
+$$
+\dfrac{TP }{TP+FN }
+$$</p>
+<h4 id="specificity">Specificity</h4>
+<p>反实例在实际总反实例中所占的百分比。分母（TN + FP）是数据集中存在的否定实例的实际数量。 它类似于召回，但变化是负面的。一种衡量类之间是否分离的度量。
+$$
+\dfrac{TN }{TN+FP }
+$$</p>
+<h4 id="f1-score">F1-score</h4>
+<p>是精度和召回率的调和平均数。因此，如果正面预测确实是正面的(precision)，并且没有错过正面预测并预测它们是负面的(recall)，那么模型在F1得分上表现得很好。
+$$
+\frac{2}{\frac{1}{precision} + \frac{1}{recall}}=\frac{2<em>precision</em>recall}{precision+recall}
+$$
+该方法的一个缺点在于precision和recall都被同等重视，但是在实际应用中，我们可能有指标偏好性，因此F1分数可能不是精确的指标。因此，加权F1得分（ weighted-F1 score ）或查看PR或ROC曲线都可以提供帮助。</p>
+<p>我们可以使用以下代码生成confusionmatrix，再利用公式计算以上数据以上数据</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="n">df_conf_norm</span> <span class="o">=</span> <span class="n">df_confusion</span> <span class="o">/</span> <span class="n">df_confusion</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">df_conf_norm</span>
+</code></pre></td></tr></table>
+</div>
+</div><table>
+<thead>
+<tr>
+<th style="text-align:right">Predicted</th>
+<th style="text-align:right">0</th>
+<th style="text-align:right">1</th>
+<th style="text-align:right">All</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">Actual</td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+<td style="text-align:right"></td>
+</tr>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0.500000</td>
+<td style="text-align:right">0.000000</td>
+<td style="text-align:right">0.125</td>
+</tr>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0.333333</td>
+<td style="text-align:right">0.388889</td>
+<td style="text-align:right">0.375</td>
+</tr>
+<tr>
+<td style="text-align:right">All</td>
+<td style="text-align:right">0.833333</td>
+<td style="text-align:right">0.388889</td>
+<td style="text-align:right">0.500</td>
+</tr>
+</tbody>
+</table>
+<p>使用classification_report可以得到上述值。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">classification_report</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+<span class="n">y_actu</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_actu</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/01/20201217_2_confusion-matrix-report.png"
+        data-srcset="/01/20201217_2_confusion-matrix-report.png, /01/20201217_2_confusion-matrix-report.png 1.5x, /01/20201217_2_confusion-matrix-report.png 2x"
+        data-sizes="auto"
+        alt="/01/20201217_2_confusion-matrix-report.png"
+        title="/01/20201217_2_confusion-matrix-report.png" /></p>
+<h4 id="pr曲线">PR曲线</h4>
+<p>它是不同阈值在precision和recall之间的曲线。下图中，有6个预测变量，分别显示了它们在各种阈值下的精确调用曲线。 图的右上方（黑色曲线）是我们获得高精度和召回率的理想空间。 AUC就是曲线下的面积。 其数值越高越好。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="https://miro.medium.com/max/741/1*FPT_ykB5W226a-GW3g8l5A.png"
+        data-srcset="https://miro.medium.com/max/741/1*FPT_ykB5W226a-GW3g8l5A.png, https://miro.medium.com/max/741/1*FPT_ykB5W226a-GW3g8l5A.png 1.5x, https://miro.medium.com/max/741/1*FPT_ykB5W226a-GW3g8l5A.png 2x"
+        data-sizes="auto"
+        alt="https://miro.medium.com/max/741/1*FPT_ykB5W226a-GW3g8l5A.png"
+        title="Image for post" /></p>
+<h4 id="roc-曲线">ROC 曲线</h4>
+<p>ROC针对各种阈值绘制了针对 True Positive Rate(TPR)和False Positive Rate(FPR)的图表。随着TPR的增加，FPR也跟着增加。如图左所示，我们想要四个类别更靠近左上角的阈值。如图右所示，在给定的数据集上比较不同的预测变量也变得容易了，您可以根据手头的应用选择阈值。
+$$
+TPR = Recall = \dfrac{TP}{TP+FN}
+$$</p>
+<p>$$
+FPR = 1 - Specificity = \dfrac {FP}{FP+TN}
+$$</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="https://miro.medium.com/max/1400/1*3eRQjKTr18QOuozyl3daMQ.png"
+        data-srcset="https://miro.medium.com/max/1400/1*3eRQjKTr18QOuozyl3daMQ.png, https://miro.medium.com/max/1400/1*3eRQjKTr18QOuozyl3daMQ.png 1.5x, https://miro.medium.com/max/1400/1*3eRQjKTr18QOuozyl3daMQ.png 2x"
+        data-sizes="auto"
+        alt="https://miro.medium.com/max/1400/1*3eRQjKTr18QOuozyl3daMQ.png"
+        title="Image for post" /></p>
+<h2 id="模型评估案例">模型评估案例</h2>
+<h3 id="场景1评估一个简单模型">场景1:评估一个简单模型</h3>
+<h3 id="场景2-训练模型并调整优化其超参数">场景2: 训练模型并调整（优化）其超参数</h3>
+<h2 id="参考">参考</h2>
+<ol>
+<li><a href="https://towardsdatascience.com/various-ways-to-evaluate-a-machine-learning-models-performance-230449055f15" target="_blank" rel="noopener noreffer">https://towardsdatascience.com/various-ways-to-evaluate-a-machine-learning-models-performance-230449055f15</a></li>
+<li><a href="https://www.ritchieng.com/machine-learning-evaluate-classification-model/" target="_blank" rel="noopener noreffer">https://www.ritchieng.com/machine-learning-evaluate-classification-model/</a></li>
+</ol>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-11-01</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" data-title="如何评估一个模型"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Hacker News" data-sharer="hackernews" data-url="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" data-title="如何评估一个模型"><i class="fab fa-hacker-news fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Line" data-sharer="line" data-url="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" data-title="如何评估一个模型"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.14.0/icons/line.svg"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lycyhrc.github.io/%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E6%A8%A1%E5%9E%8B/" data-title="如何评估一个模型" data-ralateuid="xxxx"><i class="fab fa-weibo fa-fw"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"></div>
+</div>
+<div id="comments"><div id="valine" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://valine.js.org/">Valine</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.88.1">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">xxxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/valine/valine.min.css"><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/algoliasearch@4.2.0/dist/algoliasearch-lite.umd.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.2/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{"valine":{"appId":"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI","appKey":"WBmoGyJtbqUswvfLh6L8iEBr","avatar":"mp","el":"#valine","emojiCDN":"https://cdn.jsdelivr.net/npm/emoji-datasource-google@5.0.1/img/google/64/","emojiMaps":{"100":"1f4af.png","alien":"1f47d.png","anger":"1f4a2.png","angry":"1f620.png","anguished":"1f627.png","astonished":"1f632.png","black_heart":"1f5a4.png","blue_heart":"1f499.png","blush":"1f60a.png","bomb":"1f4a3.png","boom":"1f4a5.png","broken_heart":"1f494.png","brown_heart":"1f90e.png","clown_face":"1f921.png","cold_face":"1f976.png","cold_sweat":"1f630.png","confounded":"1f616.png","confused":"1f615.png","cry":"1f622.png","crying_cat_face":"1f63f.png","cupid":"1f498.png","dash":"1f4a8.png","disappointed":"1f61e.png","disappointed_relieved":"1f625.png","dizzy":"1f4ab.png","dizzy_face":"1f635.png","drooling_face":"1f924.png","exploding_head":"1f92f.png","expressionless":"1f611.png","face_vomiting":"1f92e.png","face_with_cowboy_hat":"1f920.png","face_with_hand_over_mouth":"1f92d.png","face_with_head_bandage":"1f915.png","face_with_monocle":"1f9d0.png","face_with_raised_eyebrow":"1f928.png","face_with_rolling_eyes":"1f644.png","face_with_symbols_on_mouth":"1f92c.png","face_with_thermometer":"1f912.png","fearful":"1f628.png","flushed":"1f633.png","frowning":"1f626.png","ghost":"1f47b.png","gift_heart":"1f49d.png","green_heart":"1f49a.png","grimacing":"1f62c.png","grin":"1f601.png","grinning":"1f600.png","hankey":"1f4a9.png","hear_no_evil":"1f649.png","heart":"2764-fe0f.png","heart_decoration":"1f49f.png","heart_eyes":"1f60d.png","heart_eyes_cat":"1f63b.png","heartbeat":"1f493.png","heartpulse":"1f497.png","heavy_heart_exclamation_mark_ornament":"2763-fe0f.png","hole":"1f573-fe0f.png","hot_face":"1f975.png","hugging_face":"1f917.png","hushed":"1f62f.png","imp":"1f47f.png","innocent":"1f607.png","japanese_goblin":"1f47a.png","japanese_ogre":"1f479.png","joy":"1f602.png","joy_cat":"1f639.png","kiss":"1f48b.png","kissing":"1f617.png","kissing_cat":"1f63d.png","kissing_closed_eyes":"1f61a.png","kissing_heart":"1f618.png","kissing_smiling_eyes":"1f619.png","laughing":"1f606.png","left_speech_bubble":"1f5e8-fe0f.png","love_letter":"1f48c.png","lying_face":"1f925.png","mask":"1f637.png","money_mouth_face":"1f911.png","nauseated_face":"1f922.png","nerd_face":"1f913.png","neutral_face":"1f610.png","no_mouth":"1f636.png","open_mouth":"1f62e.png","orange_heart":"1f9e1.png","partying_face":"1f973.png","pensive":"1f614.png","persevere":"1f623.png","pleading_face":"1f97a.png","pouting_cat":"1f63e.png","purple_heart":"1f49c.png","rage":"1f621.png","relaxed":"263a-fe0f.png","relieved":"1f60c.png","revolving_hearts":"1f49e.png","right_anger_bubble":"1f5ef-fe0f.png","robot_face":"1f916.png","rolling_on_the_floor_laughing":"1f923.png","scream":"1f631.png","scream_cat":"1f640.png","see_no_evil":"1f648.png","shushing_face":"1f92b.png","skull":"1f480.png","skull_and_crossbones":"2620-fe0f.png","sleeping":"1f634.png","sleepy":"1f62a.png","slightly_frowning_face":"1f641.png","slightly_smiling_face":"1f642.png","smile":"1f604.png","smile_cat":"1f638.png","smiley":"1f603.png","smiley_cat":"1f63a.png","smiling_face_with_3_hearts":"1f970.png","smiling_imp":"1f608.png","smirk":"1f60f.png","smirk_cat":"1f63c.png","sneezing_face":"1f927.png","sob":"1f62d.png","space_invader":"1f47e.png","sparkling_heart":"1f496.png","speak_no_evil":"1f64a.png","speech_balloon":"1f4ac.png","star-struck":"1f929.png","stuck_out_tongue":"1f61b.png","stuck_out_tongue_closed_eyes":"1f61d.png","stuck_out_tongue_winking_eye":"1f61c.png","sunglasses":"1f60e.png","sweat":"1f613.png","sweat_drops":"1f4a6.png","sweat_smile":"1f605.png","thinking_face":"1f914.png","thought_balloon":"1f4ad.png","tired_face":"1f62b.png","triumph":"1f624.png","two_hearts":"1f495.png","unamused":"1f612.png","upside_down_face":"1f643.png","weary":"1f629.png","white_frowning_face":"2639-fe0f.png","white_heart":"1f90d.png","wink":"1f609.png","woozy_face":"1f974.png","worried":"1f61f.png","yawning_face":"1f971.png","yellow_heart":"1f49b.png","yum":"1f60b.png","zany_face":"1f92a.png","zipper_mouth_face":"1f910.png","zzz":"1f4a4.png"},"enableQQ":false,"highlight":true,"lang":"zh-cn","pageSize":10,"placeholder":"你的评论 ...","recordIP":true,"serverURLs":"https://leancloud.hugoloveit.com","visitor":true}},"search":{"algoliaAppID":"PASDMWALPK","algoliaIndex":"index.zh-cn","algoliaSearchKey":"b42948e51daaa93df92381c8e2ac0f93","highlightTag":"em","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"algolia"}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
